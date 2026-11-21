@@ -1,0 +1,63 @@
+id: graphql-introspection-enabled
+
+info:
+  name: GraphQL Introspection Enabled
+  author: security-researcher
+  severity: medium
+  description: >
+    Detects whether GraphQL introspection is enabled on the target endpoint.
+    Introspection allows anyone to query the full schema (types, queries,
+    mutations, fields) which aids attackers in mapping the API surface.
+    Should be disabled in production environments.
+  reference:
+    - https://graphql.org/learn/introspection/
+    - https://owasp.org/www-project-web-security-testing-guide/
+  tags: graphql,introspection,api,misconfig
+
+http:
+  - method: POST
+
+    path:
+      - "{{BaseURL}}/graphql"
+      - "{{BaseURL}}/api/graphql"
+      - "{{BaseURL}}/v1/graphql"
+      - "{{BaseURL}}/v2/graphql"
+      - "{{BaseURL}}/query"
+      - "{{BaseURL}}/gql"
+      - "{{BaseURL}}/graphiql"
+      - "{{BaseURL}}/playground"
+      - "{{BaseURL}}/api/v1/graphql"
+      - "{{BaseURL}}/api/v2/graphql"
+
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+      Origin: "{{BaseURL}}"
+
+    body: |
+      {"query":"{ __schema { queryType { name } types { name kind } } }"}
+
+    matchers-condition: and
+    matchers:
+      - type: status
+        status:
+          - 200
+
+      - type: word
+        part: body
+        words:
+          - "__schema"
+          - "queryType"
+        condition: and
+
+      - type: word
+        part: header
+        words:
+          - "application/json"
+
+    extractors:
+      - type: regex
+        part: body
+        name: queryTypeName
+        regex:
+          - '"queryType"\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"'

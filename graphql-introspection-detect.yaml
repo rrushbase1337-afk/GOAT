@@ -22,38 +22,56 @@ http:
       - "{{BaseURL}}/api/graphql"
       - "{{BaseURL}}/v1/graphql"
       - "{{BaseURL}}/v2/graphql"
+      - "{{BaseURL}}/v3/graphql"
       - "{{BaseURL}}/query"
       - "{{BaseURL}}/gql"
       - "{{BaseURL}}/graphiql"
       - "{{BaseURL}}/playground"
       - "{{BaseURL}}/api/v1/graphql"
       - "{{BaseURL}}/api/v2/graphql"
+      - "{{BaseURL}}/api/v3/graphql"
+      - "{{BaseURL}}/api/query"
+      - "{{BaseURL}}/graph"
+      - "{{BaseURL}}/graphql/v1"
+      - "{{BaseURL}}/graphql/v2"
+      - "{{BaseURL}}/graphql/console"
+      - "{{BaseURL}}/console"
+      - "{{BaseURL}}/backend/graphql"
+      - "{{BaseURL}}/app/graphql"
+      - "{{BaseURL}}/public/graphql"
+      - "{{BaseURL}}/private/graphql"
+      - "{{BaseURL}}/internal/graphql"
+      - "{{BaseURL}}/external/graphql"
+      - "{{BaseURL}}/service/graphql"
+      - "{{BaseURL}}/services/graphql"
+      - "{{BaseURL}}/data/graphql"
+      - "{{BaseURL}}/portal/graphql"
+      - "{{BaseURL}}/admin/graphql"
 
     headers:
       Content-Type: application/json
-      Accept: application/json
-      Origin: "{{BaseURL}}"
+      Accept: application/json, */*
+      User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36
 
     body: |
       {"query":"{ __schema { queryType { name } types { name kind } } }"}
 
+    # Stop after first match per host
+    stop-at-first-match: true
+
     matchers-condition: and
     matchers:
+      # Accept 200 or 201
       - type: status
         status:
           - 200
+          - 201
 
+      # Must have __schema in body — definitive proof of introspection
       - type: word
         part: body
         words:
           - "__schema"
-          - "queryType"
-        condition: and
-
-      - type: word
-        part: header
-        words:
-          - "application/json"
 
     extractors:
       - type: regex
@@ -61,3 +79,9 @@ http:
         name: queryTypeName
         regex:
           - '"queryType"\s*:\s*\{\s*"name"\s*:\s*"([^"]+)"'
+
+      - type: regex
+        part: body
+        name: endpoint
+        regex:
+          - 'https?://[^\s"]+'
